@@ -2,8 +2,6 @@
 #include <QtGlobal>
 
 
-
-
 bool collisions::isInitCollisions(std::vector<std::vector<CellState> > &field, CellState &future, Pos currentPos)
 {
     CellState& previous = field.at(currentPos.X).at(currentPos.Y);
@@ -12,11 +10,24 @@ bool collisions::isInitCollisions(std::vector<std::vector<CellState> > &field, C
 
         if ( future.GetIsGamer() )
         {
+            std::vector<bool (CellState::*)(void) const> arrayOfCollisionsForGamer
+            {
+                &CellState::GetIsRobot,
+                &CellState::GetIsHoles
+            };
+
             for (unsigned int i = 0 ; i < field.size(); i++)
                 for (unsigned int j = 0 ; j < field.size(); j++)
+                    if (    field.at(i).at(j).GetIsGold() )
+                    {
+                    std::vector<Pos> positions =  getIsTheirWay (field,
+                                                                 currentPos,
+                                                                 Pos(i,j),arrayOfCollisionsForGamer );
+                    }
 
 
-            goto exit;
+
+                            goto exit;
         }
 
 
@@ -53,25 +64,26 @@ std::vector<Pos> collisions::getNeighbors(const Pos & current,unsigned int field
     {
         Pos newPos = current;
         newPos.X++;
-          rc.push_back(newPos);
+        rc.push_back(newPos);
     }
     if ( current.Y >0 )
     {
         Pos newPos = current;
         newPos.Y--;
-          rc.push_back(newPos);
+        rc.push_back(newPos);
     }
     if ( current.Y < fieldSize-1 )
     {
         Pos newPos = current;
         newPos.X--;
-         rc.push_back(newPos);
+        rc.push_back(newPos);
     }
+    return rc;
 }
 
 std::vector<Pos> collisions:: getIsTheirWay (std::vector<std::vector<CellState> > & field,
                                              Pos Start,
-                                             Pos end,std::vector<bool (CellState::*)(void)> arrayOfCallback )
+                                             Pos end,std::vector<bool (CellState::*)(void) const> arrayOfCallback )
 {
     std::vector <std::vector <unsigned int> > waveField;
     waveField.resize(field.size());
@@ -90,27 +102,27 @@ std::vector<Pos> collisions:: getIsTheirWay (std::vector<std::vector<CellState> 
                 if  (waveField[i][j] > 0)
                 {
                     unsigned int value = waveField[i][j];
-                Pos current{i,j};
-                std::vector<Pos>  vec = getNeighbors(current, waveField.size());
-                for (Pos position : vec)
-                {
-                    if (waveField[position.X][position.Y] == 0 )
+                    Pos current{i,j};
+                    std::vector<Pos>  vec = getNeighbors(current, waveField.size());
+                    for (Pos position : vec)
                     {
-                        bool flag = true;
-                        for ( auto callback  : arrayOfCallback)
+                        if (waveField[position.X][position.Y] == 0 )
                         {
-                            if  (((field.at(i).at(j)).*callback)())
+                            bool flag = true;
+                            for ( auto callback  : arrayOfCallback)
                             {
-                                flag = true;
-                                break;
+                                if  (((field.at(i).at(j)).*callback)())
+                                {
+                                    flag = true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                            {
+                                waveField[position.X][position.Y] = value+1;
                             }
                         }
-                        if (flag)
-                        {
-                            waveField[position.X][position.Y] = value+1;
-                        }
                     }
-                }
                 }
             }
 

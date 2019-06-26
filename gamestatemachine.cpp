@@ -6,6 +6,8 @@
 #include <QFont>
 #include <QBrush>
 
+#include "collisions.h"
+
 GameStateMachine::GameStateMachine()
 {
 
@@ -117,7 +119,17 @@ void GameStateMachine::NewGame(GameinitializationParams params)
 
         unsigned int gamerPosition =  ( static_cast<unsigned int>(qrand()) % (_chamberSize*_chamberSize));
 
-        _field.at(gamerPosition/_chamberSize).at(gamerPosition%_chamberSize).SetIsGamer(true);
+        CellState future;
+        future.SetIsGamer(true);
+        {
+        int tempX = gamerPosition/_chamberSize;
+        int tempY = gamerPosition%_chamberSize;
+
+        if(collisions::isInitCollisions(_field,future,Pos(tempX,tempY)))
+        _field.at(tempX).at(tempY).SetIsGamer(true);
+        }
+
+
 
         auto f = [&]( void (CellState::*func)(bool), unsigned int paramCount) -> unsigned int{
             unsigned int result =0;
